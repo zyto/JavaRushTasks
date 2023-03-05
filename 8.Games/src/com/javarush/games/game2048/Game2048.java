@@ -2,9 +2,12 @@ package com.javarush.games.game2048;
 
 import com.javarush.engine.cell.*;
 
+import java.util.Arrays;
+
 public class Game2048 extends Game {
     private static final int SIDE = 4;
     private int[][] gameField = new int[SIDE][SIDE];
+    private boolean isGameStopped = false;
     public void initialize(){
         setScreenSize(SIDE,SIDE);
         createGame();
@@ -26,6 +29,12 @@ public class Game2048 extends Game {
     }
 
     private void createNewNumber(){
+
+        if (getMaxTileValue() == 2048){
+            win();
+            return;
+        }
+        
         int x = 0;
         int y = 0;
         do{
@@ -90,27 +99,130 @@ public class Game2048 extends Game {
     }
 
     private void moveLeft(){
+        boolean res = false;
+        for (int[] row : gameField){
+            res |= compressRow(row);
+            res |= mergeRow(row);
+            res |= compressRow(row);
+        }
 
+        if (res){
+            createNewNumber();
+        }
     }
 
     private void moveRight(){
-
+        rotateClockwise();
+        rotateClockwise();
+        moveLeft();
+        rotateClockwise();
+        rotateClockwise();
     }
 
     private void moveUp(){
-
+        rotateClockwise();
+        rotateClockwise();
+        rotateClockwise();
+        moveLeft();
+        rotateClockwise();
     }
 
     private void moveDown(){
-
+        rotateClockwise();
+        moveLeft();
+        rotateClockwise();
+        rotateClockwise();
+        rotateClockwise();
     }
 
     public void onKeyPress(Key key){
         switch (key){
-            case LEFT: moveLeft(); break;
-            case RIGHT: moveRight(); break;
-            case UP: moveUp(); break;
-            case DOWN: moveDown(); break;
+            case LEFT: moveLeft(); drawScene(); break;
+            case RIGHT: moveRight(); drawScene(); break;
+            case UP: moveUp(); drawScene(); break;
+            case DOWN: moveDown(); drawScene(); break;
         }
+    }
+
+    private void rotateClockwise(){
+
+        int[][] copy = new int[SIDE][SIDE];
+
+
+        for (int y = 0; y < SIDE; y++) {
+            for (int x = 0; x < SIDE; x++) {
+                copy[x][SIDE-1-y] = gameField[y][x];
+            }
+        }
+
+
+
+        /*
+        int width = SIDE-1;
+        int height = SIDE-1;
+
+        for (int y = 0; y < (width + 1) / 2; y++) {
+            for (int x = y; x < height - y; x++) {
+                copy[x][height-y] = gameField[y][x];
+                copy[height-y][width-x] = gameField[x][height-y];
+                copy[height-x][y] = gameField[height-y][width-x];
+                copy[y][x] = gameField[height-x][y];
+            }
+        }
+        */
+
+        gameField = copy;
+    }
+
+    private void printMatrix(int[][] matrix){
+        for (int y = 0; y < matrix.length; y++) {
+            for (int x = 0; x < matrix[y].length; x++) {
+                System.out.printf("\t%d\t", matrix[y][x]);
+            }
+            System.out.println();
+        }
+        System.out.println("---");
+    }
+
+    private int getMaxTileValue(){
+        int max = 0;
+        for (int y = 0; y < SIDE; y++) {
+            for (int x = 0; x < SIDE; x++) {
+                max = Math.max(max,gameField[y][x]);
+            }
+        }
+        return max;
+    }
+
+    private void win(){
+        isGameStopped = true;
+        showMessageDialog(Color.WHITE,"YOU WIN!!!", Color.GREEN, 70);
+    }
+
+    private boolean canUserMove(){
+        for (int y = 0; y < SIDE; y++) {
+            for (int x = 0; x < SIDE; x++) {
+                int current = gameField[y][x];
+                if (current == 0){
+                    return true;
+                }
+
+                int down = 0;
+                int right = 0;
+
+                if(y+1 <= SIDE-1){
+                    down = gameField[y+1][x];
+                }
+                if(x+1 <= SIDE-1){
+                    right = gameField[y][Math.min(SIDE-1, x+1)];
+                }
+
+                if (current == down || current == right){
+                    return true;
+                }
+
+            }
+        }
+        return false;
     }
 }
